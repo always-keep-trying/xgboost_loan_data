@@ -4,6 +4,8 @@ import json
 import pandas as pd
 import numpy as np
 import xgboost as xgb
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import OneHotEncoder
 
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -35,28 +37,38 @@ def calculate_score(func):
         #print(f"Coefficient of determination of prediction: {self.molde.score()}")
     return wrapper
 
-class LoanDefault:
+
+class PredictiveModel:
 
     def __init__(self, project_dir):
         self.project_dir = project_dir
-        self.data_path = os.path.join(self.project_dir,'data')
-        self.model_path = os.path.join(self.project_dir,'model')
-        self.loan_df = pd.read_csv(os.path.join(self.data_path,'loan_data.csv'))
+        self.data_path = os.path.join(self.project_dir, 'data')
+        self.model_path = os.path.join(self.project_dir, 'model')
+        self.loan_df = pd.read_csv(os.path.join(self.data_path, 'loan_data.csv'))
         self.x = None
         self.y = None
         self.model = None
-        self.model_parms = {'objective': 'binary:logistic', 'max_depth': 5, 'eta': 0.3}
         self.train_data = []
         self.test_data = []
 
-    def prepare_data(self):
+    def prepare_data(self, use_categorical=True):
         """
         Prepares the data used in the model
         """
         self.x, self.y = self.loan_df.drop(labels='loan_status', axis=1), self.loan_df[['loan_status']]
         # convert columns with string data to category
-        for col in self.x.select_dtypes(exclude=np.number).columns.tolist():
-            self.x[col] = self.x[col].astype('category')
+        categorical_columns = self.x.select_dtypes(exclude=np.number).columns.tolist()
+        if use_categorical:
+            for col in categorical_columns:
+                self.x[col] = self.x[col].astype('category')
+        else:
+            print("using pandas's get_dummies function for categorical data")
+            self.x = pd.get_dummies(self.x,columns=categorical_columns)
+
+        # test vs train data
+        x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=0.25, random_state=1)
+        self.train_data = [x_train, y_train]
+        self.test_data = [x_test, y_test]
 
     def remove_variable(self, variable_name):
         """
@@ -73,6 +85,21 @@ class LoanDefault:
             self.x.drop(variable_name, axis=1, inplace=True)
             print(f"Variable '{variable_name}' removed! ({num_vars} columns to {self.x.shape[1]} columns)")
 
+    def fit_model(self):
+        raise NotImplementedError("Subclass will need to implement this method")
+
+    def predict(self):
+        raise NotImplementedError("Subclass will need to implement this method")
+
+
+class XgboostModel(PredictiveModel):
+
+    def __init__(self, project_dir):
+        super().__init__(project_dir)
+        self.model_parms = {'objective': 'binary:logistic', 'max_depth': 5, 'eta': 0.3}
+
+    def prepare_data(self):
+        super().prepare_data(use_categorical=True)
 
     def fit_model(self, n_boost: int=10):
         """
@@ -81,10 +108,8 @@ class LoanDefault:
 
         :arg n_boost: Number of boosting iterations
         """
-        # test vs train data
-        x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=0.25, random_state=1)
-        self.train_data = [x_train, y_train]
-        self.test_data  = [x_test, y_test]
+        x_train,y_train = self.train_data
+
         d_train = xgb.DMatrix(data=x_train, label=y_train, enable_categorical=True)
         # train model
         final_gb = xgb.train(self.model_parms, d_train, num_boost_round=n_boost)
@@ -120,16 +145,51 @@ class LoanDefault:
 
         :return: prediction
         """
-        x_test = self.test_data[0]
-        y_test = self.test_data[1]
+        x_test,y_test = self.test_data
         d_test = xgb.DMatrix(data=x_test, label=y_test, enable_categorical=True)
         return self.predict(x_data=d_test, y_true=y_test)
 
 
+class LogisticRegressionModel(PredictiveModel):
+
+    def __init__(self, project_dir):
+        super().__init__(project_dir)
+
+    def prepare_data(self):
+        super().prepare_data(use_categorical=False)
+
+    def fit_model(self):
+        x_train,y_train = self.train_data
+        # train logistic regression model
+        self.model = LogisticRegression(random_state=1,solver='saga',max_iter=5000).fit(x_train, y_train)
+
+    @calculate_score
+    def predict(self, x_data, y_true):
+        prediction_out = self.model.predict_proba(x_data).tolist()
+        return [x[1] for x in prediction_out]
+
+    def predict_with_test_data(self):
+        """
+        Prediction based on the test data.
+
+        :return: prediction
+        """
+        x_test,y_test = self.test_data
+        return self.predict(x_data=x_test, y_true=y_test)
+
+
 if __name__ == "__main__":
     project_dir = r"D:\Pycharm_Projects\xgboost_loan_data"
-    LD = LoanDefault(project_dir)
-    LD.prepare_data()
-    #LD.remove_variable(["previous_loan_defaults_on_file","credit_score"])
-    LD.fit_model()
-    prediction = LD.predict_with_test_data()
+    print("Use Xgboost model")
+    M1 = XgboostModel(project_dir)
+    M1.prepare_data()
+    #M1.remove_variable(["previous_loan_defaults_on_file","credit_score"])
+    M1.fit_model()
+    prediction_model1 = M1.predict_with_test_data()
+
+    print("Use Logistic model")
+    M2 = LogisticRegressionModel(project_dir)
+    M2.prepare_data()
+    M2.fit_model()
+    prediction_model2 = M2.predict_with_test_data()
+
