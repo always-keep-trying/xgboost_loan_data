@@ -24,17 +24,15 @@ def prob_to_boolean(probability ,threshold=0.5):
 
 def calculate_score(func):
     """
-    Function to calculate the prediciton score. To be used as a decorator.
+    Function to calculate the prediction score. To be used as a decorator.
     """
     def wrapper(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
-        bool_result = prob_to_boolean(result)
+        result = func(self, *args, **kwargs) # result represents the probability
+        bool_result = prob_to_boolean(result) # convert probability to boolean
         y_true = self.test_data[1]
         if 'y_true' in kwargs.keys():
-            print("Custom data for prediction")
             y_true = kwargs['y_true'].squeeze().tolist()
-        print(f"Prediction Accuracy: {np.round(accuracy_score(y_true=y_true ,y_pred=bool_result),3)}")
-        #print(f"Coefficient of determination of prediction: {self.molde.score()}")
+        print(f"Prediction Accuracy: {np.round(accuracy_score(y_true=y_true ,y_pred=bool_result),3)*100:.2f}%")
     return wrapper
 
 
@@ -67,6 +65,12 @@ class PredictiveModel:
 
         # test vs train data
         x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=0.25, random_state=1)
+        n = self.y.shape[0]
+        n_train = y_train.shape[0]
+        n_test = y_test.shape[0]
+
+        print(f"Train size: {np.round(100 * n_train/n,2)}%, Test size: {np.round(100 * n_test/n,2)}%")
+
         self.train_data = [x_train, y_train]
         self.test_data = [x_test, y_test]
 
@@ -81,9 +85,9 @@ class PredictiveModel:
             [self.remove_variable(x) for x in variable_name]
         else:
             # remove one variable
-            num_vars =self.x.shape[1]
-            self.x.drop(variable_name, axis=1, inplace=True)
-            print(f"Variable '{variable_name}' removed! ({num_vars} columns to {self.x.shape[1]} columns)")
+            num_vars =self.loan_df.shape[1]
+            self.loan_df.drop(variable_name, axis=1, inplace=True)
+            print(f"Variable '{variable_name}' removed! ({num_vars} columns to {self.loan_df.shape[1]} columns)")
 
     def fit_model(self):
         raise NotImplementedError("Subclass will need to implement this method")
@@ -182,13 +186,14 @@ if __name__ == "__main__":
     project_dir = r"D:\Pycharm_Projects\xgboost_loan_data"
     print("Use Xgboost model")
     M1 = XgboostModel(project_dir)
+    M1.remove_variable(["previous_loan_defaults_on_file","credit_score"])
     M1.prepare_data()
-    #M1.remove_variable(["previous_loan_defaults_on_file","credit_score"])
     M1.fit_model()
     prediction_model1 = M1.predict_with_test_data()
-
+    print("\n")
     print("Use Logistic model")
     M2 = LogisticRegressionModel(project_dir)
+    M2.remove_variable(["previous_loan_defaults_on_file","credit_score"])
     M2.prepare_data()
     M2.fit_model()
     prediction_model2 = M2.predict_with_test_data()
