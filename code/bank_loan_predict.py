@@ -33,6 +33,8 @@ def calculate_score(func):
         if 'y_true' in kwargs.keys():
             y_true = kwargs['y_true'].squeeze().tolist()
         print(f"Prediction Accuracy: {np.round(accuracy_score(y_true=y_true ,y_pred=bool_result),3)*100:.2f}%")
+        return result
+
     return wrapper
 
 
