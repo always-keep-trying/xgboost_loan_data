@@ -23,3 +23,8 @@ Before we jump into performing analysis using the xgboost library, lets take a m
 2. [Data exploration, excluding observations without previous loan defaults](./code/data_exploration_exclude_previous_defults.ipynb)
  
     Similar analysis can be performed based on the subset data, excluding observations with previous loan defaults
+
+
+## Model 
+
+Use XGboost to predict the loan_status categorization based on the data give. For comparison we will also use the Logistic Regression model from sklearn.
