@@ -44,7 +44,7 @@ class PredictiveModel:
         self.project_dir = project_dir
         self.data_path = os.path.join(self.project_dir, 'data')
         self.model_path = os.path.join(self.project_dir, 'model')
-        self.loan_df = pd.read_csv(os.path.join(self.data_path, 'loan_data.csv'))
+        self.loan_df = pd.read_csv(os.path.join(self.data_path, 'loan_data_normalized.csv'))
         self.x = None
         self.y = None
         self.model = None
