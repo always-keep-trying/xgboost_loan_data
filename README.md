@@ -9,13 +9,20 @@ The dataset contains information regarding 45,000 loan applicants and if their l
 [Source Link](https://www.kaggle.com/datasets/udaymalviya/bank-loan-data)
 
 
+## Python Virtual environment
+
+If you would like to run this code on your own please feel free to replicate my Python virtual environment. I've listed the packages and their versions in the [requirements.txt](./code/requirements.txt)
+
+```
+pip install -r requirements.txt
+```
 
 ## Data Exploration
 Before we jump into performing analysis using the xgboost library, lets take a moment to learn about the data we are working with.
 
 1. [Full dataset exploration](./code/data_exploration.ipynb)
 
-    Separate out the numeric and catagorical data and perform exploration using correlation matrix and barcharts.
+    Separate out the numeric and categorical data and perform exploration using correlation matrix and bar charts.
     
     Based on this exploration, it is noted that all loan applications that corresponds with an applicant with a previous loan default are denied of their loan.
 
@@ -27,17 +34,17 @@ Before we jump into performing analysis using the xgboost library, lets take a m
 
 ## Model 
 
-Use XGboost to predict the loan_status categorization based on the data give. For comparison we will also use the Logistic Regression model from sklearn.
+Use XGboost to predict the loan_status categorization based on the data give. For comparison, we will also use the Logistic Regression model from sklearn.
 
 1. [Use of normalize Data](./code/normalize_data.ipynb)
 
-    During testing of the code it was identifed that the logistic regression model perfomed significantly worse when using the raw data. However, this performance issue disappread when the data was normalized (Z-score). Most likely the cuase of this is due to the scaling that is present in the dataset. For example, the income would be on the order of thousands while the person's age would be on the order of tens. 
+    During testing of the code it was identified that the logistic regression model performed significantly worse when using the raw data. However, this performance issue disappeared when the data was normalized (Z-score). Most likely the cuase of this is due to the scaling that is present in the dataset. For example, the income would be on the order of thousands while the person's age would be on the order of tens. 
 
-     * Another key differnece in the data is that XGboost is able to use the categorical data as-is while the logistic regression required each categorical value to be represented as a column (Use of [pd.get_dummies](https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html)). 
+     * Another key difference in the data is that XGboost is able to use the categorical data as-is while the logistic regression required each categorical value to be represented as a column (Use of [pd.get_dummies](https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html)). 
 
 2. [Comparison of models](./code/analysis_of_models.ipynb)
 
     In this notebook, I compare the probability prediction between the 2 models. 
-    In order to visualize how the model differs in their prediction, I use use the [confusion matrix](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html) from Sklearn.
+    In order to visualize how the model differs in their prediction, I use  the [confusion matrix](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html) from Sklearn.
     The number of applicants it approves correctly (Predicted Label: 1 & True Label: 1) are similar, while logistic regression approves more applicants that should have been denied (Predicted Label: 1 & True Label: 0).
     
